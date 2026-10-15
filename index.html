@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base Converter (Binary, Decimal, Hexadecimal)</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --error: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 2rem;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        input {
+            width: 100%;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            color: var(--text-color);
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            font-family: monospace;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        input.error {
+            border-color: var(--error);
+        }
+
+        .error-msg {
+            color: var(--error);
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            min-height: 1rem;
+        }
+
+        .actions {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        button {
+            flex: 1;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button.secondary {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        button.secondary:hover {
+            background-color: var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Base Converter</h1>
+        <p class="subtitle">Real-time Binary, Decimal & Hexadecimal translator</p>
+
+        <div class="input-group">
+            <label for="decimal">Decimal (Base 10)</label>
+            <div class="input-wrapper">
+                <input type="text" id="decimal" placeholder="e.g. 255" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="error-msg" id="error-decimal"></div>
+        </div>
+
+        <div class="input-group">
+            <label for="binary">Binary (Base 2)</label>
+            <div class="input-wrapper">
+                <input type="text" id="binary" placeholder="e.g. 11111111" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="error-msg" id="error-binary"></div>
+        </div>
+
+        <div class="input-group">
+            <label for="hex">Hexadecimal (Base 16)</label>
+            <div class="input-wrapper">
+                <input type="text" id="hex" placeholder="e.g. FF" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="error-msg" id="error-hex"></div>
+        </div>
+
+        <div class="actions">
+            <button class="secondary" id="clear-btn">Clear All</button>
+        </div>
+    </div>
+
+    <script>
+        const decInput = document.getElementById('decimal');
+        const binInput = document.getElementById('binary');
+        const hexInput = document.getElementById('hex');
+
+        const decError = document.getElementById('error-decimal');
+        const binError = document.getElementById('error-binary');
+        const hexError = document.getElementById('error-hex');
+        const clearBtn = document.getElementById('clear-btn');
+
+        let isUpdating = false;
+
+        function clearErrors() {
+            [decInput, binInput, hexInput].forEach(input => input.classList.remove('error'));
+            [decError, binError, hexError].forEach(error => error.textContent = '');
+        }
+
+        function updateFields(decimalValue) {
+            if (isUpdating) return;
+            isUpdating = true;
+
+            clearErrors();
+
+            if (isNaN(decimalValue) || decimalValue === '') {
+                decInput.value = '';
+                binInput.value = '';
+                hexInput.value = '';
+                isUpdating = false;
+                return;
+            }
+
+            // Only update fields that aren't currently focused to prevent cursor jumping
+            if (document.activeElement !== decInput) {
+                decInput.value = decimalValue.toString(10);
+            }
+            if (document.activeElement !== binInput) {
+                binInput.value = decimalValue.toString(2);
+            }
+            if (document.activeElement !== hexInput) {
+                hexInput.value = decimalValue.toString(16).toUpperCase();
+            }
+
+            isUpdating = false;
+        }
+
+        decInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            if (val === '') {
+                updateFields('');
+                return;
+            }
+            if (!/^-?\d+$/.test(val)) {
+                decInput.classList.add('error');
+                decError.textContent = 'Invalid decimal number';
+                return;
+            }
+            const num = BigInt(val);
+            if (num < 0n) {
+                decInput.classList.add('error');
+                decError.textContent = 'Only non-negative numbers supported';
+                return;
+            }
+            updateFields(num);
+        });
+
+        binInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            if (val === '') {
+                updateFields('');
+                return;
+            }
+            if (!/^[01]+$/.test(val)) {
+                binInput.classList.add('error');
+                binError.textContent = 'Only 0 and 1 are allowed';
+                return;
+            }
+            const num = BigInt('0b' + val);
+            updateFields(num);
+        });
+
+        hexInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            if (val === '') {
+                updateFields('');
+                return;
+            }
+            if (!/^[0-9a-fA-F]+$/.test(val)) {
+                hexInput.classList.add('error');
+                hexError.textContent = 'Only 0-9 and A-F are allowed';
+                return;
+            }
+            const num = BigInt('0x' + val);
+            updateFields(num);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            decInput.value = '';
+            binInput.value = '';
+            hexInput.value = '';
+            clearErrors();
+            decInput.focus();
+        });
+    </script>
+</body>
+</html>
